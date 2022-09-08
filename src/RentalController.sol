@@ -31,7 +31,7 @@ contract RentalController {
         owner = _owner;
     }
 
-    function lend(
+    function postListing(
         uint256 nonce, 
         uint256 tokenId,
         address nftAddress,

@@ -37,26 +37,27 @@ contract SigTest is Test {
         vm.stopPrank();
     }
 
-    function testSignature(address nftAddress) public {
+    function testRent(address nftAddress) public {
         vm.label(nftAddress, "MockNFT");
 
-        bytes memory functionCall = abi.encodeWithSignature("lend(uint256,uint256,address,address)",0,0,nftAddress,lender);
+        bytes memory functionCall = abi.encodeWithSignature("postListing(uint256,uint256,address,address)",0,0,nftAddress,lender);
         console2.logBytes(functionCall);
         console2.logBytes32(keccak256(functionCall));
 
         proxy.delegateCall(keccak256(functionCall), functionCall);
     }
 
-    // function testDelegateCall() public {
-    //     address renter =  vm.addr(10);
-    //     bytes memory functionCall = bytes(string("0xa6aa57ce0000000000000000000000000000000000000000000000000000000000000001"));
+    function testSignature() public {
+        address signer = vm.envAddress("SIGNER_PUBLIC_KEY");
+        vm.label(signer, "Signer");
 
-    //     address signer = 0x948c9186aF31500FC5EB88f8223D592baDc4628A;
+        // cast wallet sign --private-key $SIGNER_PRIVATE_KEY $MESSAGE
+        bytes memory signature = vm.envBytes("SIGNATURE");
+        string memory message = vm.envString("MESSAGE");
 
-    //     vm.startPrank(renter, renter);
-    //     proxy.delegateCall(signer, signature, keccak256(functionCall), functionCall);
-    //     vm.stopPrank();
+        bytes32 messageHash = keccak256(abi.encode(message));
 
-    //     assertEq(controller.nonce(), 1);
-    // }
+        signer.isValidSignatureNow(messageHash, signature);
+    }
+
 }

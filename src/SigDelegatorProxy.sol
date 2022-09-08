@@ -10,14 +10,14 @@ contract SigDelegatorProxy is Ownable {
     function delegateCall(bytes32 hash, bytes memory call) public initiated {
         require(keccak256(call) == hash, "SigDelegatorProxy: invalid hash");
 
-        (bool lendResult, bytes memory lrKey) = target.call(call);
+        (bool postListingResult, bytes memory lrKey) = target.call(call);
 
-        require(lendResult, "SigDelegatorProxy: Call failed");
+        require(postListingResult, "SigDelegatorProxy: postListing call failed");
         require(lrKey.length == 32, "SigDelegatorProxy: Invalid lrKey");
 
         (bool rentResult, ) = target.call(abi.encodeWithSignature("rent(address,bytes32)", msg.sender, bytes32(lrKey)));
 
-        require(rentResult, "SigDelegatorProxy: Rent failed");
+        require(rentResult, "SigDelegatorProxy: Rent call failed");
     }
 
     function setTarget(address _target) public onlyOwner {
