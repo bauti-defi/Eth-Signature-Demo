@@ -2,22 +2,20 @@
 pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./SignatureChecker.sol";
+import "./IRentalController.sol";
 
 contract SigDelegatorProxy is Ownable {
 
     address public target;
 
-    function delegateCall(bytes32 hash, bytes memory call) public initiated {
-        require(keccak256(call) == hash, "SigDelegatorProxy: invalid hash");
+    function delegateCall(address signer, bytes memory signature, bytes memory call) public initiated {
+        require(SignatureChecker.isValidSignature(signer, SignatureChecker.getEthSignedMessageHash(keccak256(call)), signature), "SigDelegatorProxy: invalid signature");
+        
+        IRentalController.Listing memory listing = abi.decode(call, (IRentalController.Listing));
+        require(listing.lenderAddress == signer, "SigDelegatorProxy: Cannot lend on behalf of another");
 
-        (bool postListingResult, bytes memory lrKey) = target.call(call);
-
-        require(postListingResult, "SigDelegatorProxy: postListing call failed");
-        require(lrKey.length == 32, "SigDelegatorProxy: Invalid lrKey");
-
-        (bool rentResult, ) = target.call(abi.encodeWithSignature("rent(address,bytes32)", msg.sender, bytes32(lrKey)));
-
-        require(rentResult, "SigDelegatorProxy: Rent call failed");
+        IRentalController(target).rent(msg.sender, listing);
     }
 
     function setTarget(address _target) public onlyOwner {

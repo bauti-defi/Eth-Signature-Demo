@@ -1,26 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
+import "./IRentalController.sol";
 
-contract RentalController {
-
-    struct Lending {
-        uint256 nonce;
-        uint256 tokenId;
-        address nftAddress;
-        address lenderAddress;
-    }
-
-    struct Renting {
-        address renterAddress;
-    }
-
-    struct LendingRenting {
-        Lending lending;
-        Renting renting;
-    }
-
-    event Lend(address indexed lender, uint256 tokenId, address nftAddress, uint256 nonce);
-    event Rent(address indexed renter, uint256 nonce);
+contract RentalController is IRentalController{
 
     mapping(bytes32 => LendingRenting) public lendingsRentings;
     mapping(bytes32 => uint256) public nftNonce;
@@ -31,33 +13,31 @@ contract RentalController {
         owner = _owner;
     }
 
-    function postListing(
-        uint256 nonce, 
-        uint256 tokenId,
-        address nftAddress,
-        address lender
-    ) external onlyOwner returns(bytes32 lrKey){
-        bytes32 nonceKey = keccak256(abi.encodePacked(nftAddress, tokenId));
-        lrKey = _lrKey(nftAddress, tokenId, lendingId);
+
+    function postListing(Listing memory listing) private returns(bytes32 lrKey){
+        require(listing.lenderAddress != address(0), "RentalController: lender address is zero");
+
+        bytes32 nonceKey = keccak256(abi.encodePacked(listing.nftAddress, listing.tokenId));
+        lrKey = _lrKey(listing.nftAddress, listing.tokenId, lendingId);
 
         LendingRenting storage lr = lendingsRentings[lrKey];
 
-        require(nftNonce[nonceKey] == nonce, "RentalController: Invalid nonce");
+        require(nftNonce[nonceKey] == listing.nonce, "RentalController: Invalid nonce");
         require(lr.lending.lenderAddress == address(0) , "RentalController: Lending already exists");
 
         lr.lending = Lending({
             nonce: nftNonce[nonceKey]++,
-            tokenId: tokenId,
-            nftAddress: nftAddress,
-            lenderAddress: lender
+            tokenId: listing.tokenId,
+            nftAddress: listing.nftAddress,
+            lenderAddress: listing.lenderAddress
         });
 
         lendingId++;
 
-        emit Lend(lender, tokenId, nftAddress, nonce);
+        emit Lend(listing.lenderAddress, listing.tokenId, listing.nftAddress, listing.nonce);
     }
 
-    function rent(address renter, bytes32 lrKey) external onlyOwner {
+    function _rent(address renter, bytes32 lrKey) private {
         LendingRenting storage lr = lendingsRentings[lrKey];
 
         require(lr.lending.lenderAddress != address(0), "RentalController: Lending does not exist");
@@ -67,6 +47,17 @@ contract RentalController {
         lendingsRentings[lrKey].renting = Renting({
             renterAddress: renter
         });
+
+        // perform all transfers (nfts and tokens) here
+    }
+
+    function rent(address renter, Listing memory listing) external onlyOwner {
+        bytes32 lrKey = postListing(listing);
+        _rent(renter, lrKey);
+    }
+
+    function stopRent() public {
+        // TODO: implement
     }
 
     function _lrKey(address nftAddress, uint256 tokenId, uint256 _lendingId) internal pure returns(bytes32) {

@@ -3,5 +3,7 @@ src = 'src'
 out = 'out'
 libs = ['lib']
 remappings = ['@openzeppelin/=lib/openzeppelin-contracts/', '@src/=src/', '@test/=test/']
+fs_permissions = [{ access = "read", path = "./test/signature.json"}, { access = "read", path = "./test/rental.json"}]
+ffi=true
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
