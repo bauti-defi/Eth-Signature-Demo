@@ -3,36 +3,24 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
-import "forge-std/StdJson.sol";
 import "@src/SignatureChecker.sol";
 
 contract SigTest is Test {
-    using stdJson for string;
     using SignatureChecker for address;
 
-    struct Sig {
-        bytes message;
-        bytes32 messageHash;
-        bytes privateKey;
-        bytes signature;
-        address signer;
-    }
+    function testSignatureValidationE2E() public {
+        uint256 privateKey = 123;
+        address signer = vm.addr(privateKey);
 
+        bytes memory message = bytes("hello world");
 
-    function testSignatureValidation() public {
-        string memory root = vm.projectRoot();
-        string memory path = string.concat(root, "/test/signature.json");
-        string memory json = vm.readFile(path);
-        bytes memory parsedJson = vm.parseJson(json);
+        bytes32 messageHash = SignatureChecker.getEthSignedMessageHash(keccak256(message));
 
-        Sig memory sig = abi.decode(parsedJson, (Sig));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, messageHash);
 
-        console2.logAddress(sig.signer);
-        console2.logBytes32(sig.messageHash);
-        console2.logBytes(sig.message);
-        console2.logBytes(sig.signature);
+        bytes memory signature = abi.encodePacked(r, s, v);
 
-        assertTrue(sig.signer.isValidSignature(sig.messageHash, sig.signature));
+        assert(signer.isValidSignature(messageHash, signature));
     }
 
 }
