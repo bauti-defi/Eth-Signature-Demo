@@ -2,7 +2,7 @@
 src = 'src'
 out = 'out'
 libs = ['lib']
-remappings = ['@openzeppelin/=lib/openzeppelin-contracts/', '@src/=src/', '@test/=test/']
+remappings = ['@openzeppelin/=lib/openzeppelin-contracts/', '@src/=src/', '@test/=test/', "@string-utils/=lib/solidity-stringutils/src/"]
 fs_permissions = [{ access = "read", path = "./test/signature.json"}, { access = "read", path = "./test/rental.json"}]
 ffi=true
 

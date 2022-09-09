@@ -8,9 +8,11 @@ import "@src/SigDelegatorProxy.sol";
 import "@src/RentalController.sol";
 import "@src/IRentalController.sol";
 import "@src/SignatureChecker.sol";
+import "@string-utils/strings.sol";
 // import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 contract SigTest is Test {
+    using strings for *;
     using stdJson for string;
     using SignatureChecker for address;
 
@@ -39,7 +41,6 @@ contract SigTest is Test {
     }
 
     function toHexString(bytes memory buffer, bool preffix) public pure returns (string memory) {
-
         // Fixed buffer size for hexadecimal convertion
         bytes memory converted = new bytes(buffer.length * 2);
 
@@ -65,7 +66,7 @@ contract SigTest is Test {
 
         MockRental memory rental = abi.decode(parsedJson, (MockRental));
 
-        vm.label(rental.signer, "renter");
+        vm.label(rental.signer, "Lender");
 
         IRentalController.Listing memory listing = IRentalController.Listing({
             nonce: 0,
@@ -74,6 +75,8 @@ contract SigTest is Test {
             lenderAddress: rental.signer
         });
 
+        // Lets generate a signature
+
         string[] memory inputs = new string[](6);
 
         inputs[0] = "cast";
@@ -81,29 +84,29 @@ contract SigTest is Test {
         inputs[2] = "sign";
         inputs[3] = "--private-key";
         inputs[4] = rental.privateKey;
-        inputs[5] = toHexString(abi.encode(listing), true);
-
-        console2.logString(inputs[4]);
+        inputs[5] = vm.toString(abi.encode(listing));
 
         bytes memory res = vm.ffi(inputs);
-
-        console2.logString(string(res)[10]);
+        // res: "Signature: 0x5bf72af31a009c39fb94c8d6da44d2a92d6cffaba2301a847132096759122a522ba88ee07a9ad20c72a1c44793cb853bed5524648f1e3d7957751053b28814ac1b"
         console2.logBytes(res);
+        // console2.logBytes(abi.encodePacked("Signature: ")); // 0x5369676e61747572653a20
+
+        // bytes memory header;
+        // bytes memory signature;
+
+        console2.logBytes(res[10:15]);
+
+
+        // strings.slice memory output = string(res).toSlice();
+
+        // strings.slice memory splitAt = "Signature: ".toSlice();
+        // // Extract the signature from output
+        // string memory signature = output.copy().find(splitAt).beyond(splitAt).toString();
+
+        // console2.logString(signature);
+        // console2.logBytes(abi.encodePacked(signature));
+
+        // proxy.delegateCall(rental.signer, bytes(signature), abi.encode(listing));
     }
-
-    // function testSignature() public {
-    //     address signer = vm.envAddress("SIGNER_PUBLIC_KEY");
-    //     vm.label(signer, "Signer");
-
-    //     // cast wallet sign --private-key $SIGNER_PRIVATE_KEY $MESSAGE
-    //     bytes memory signature = vm.envBytes("SIGNATURE");
-    //     string memory message = vm.envString("MESSAGE");
-
-    //     bytes32 messageHash = keccak256(abi.encodePacked(message));
-
-    //     console2.logBytes32(messageHash);
-
-    //     assertTrue(signer.isValidSignatureNow(messageHash, signature));
-    // }
 
 }
