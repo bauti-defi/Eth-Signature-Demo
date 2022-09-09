@@ -12,11 +12,6 @@ import "@src/SignatureChecker.sol";
 contract SigTest is Test {
     using SignatureChecker for address;
 
-    struct MockRental {
-        string privateKey;
-        address signer;
-    }
-
     address deployer;
     SigDelegatorProxy proxy;
     RentalController controller;
