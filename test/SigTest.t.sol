@@ -8,8 +8,11 @@ import "@src/SignatureChecker.sol";
 contract SigTest is Test {
     using SignatureChecker for address;
 
-    function testSignatureValidationE2E() public {
-        uint256 privateKey = 123;
+    function testSignatureValidationE2E(uint256 privateKey) public {
+        // vm requirement
+        vm.assume(privateKey < 115792089237316195423570985008687907852837564279074904382605163141518161494337);
+        vm.assume(privateKey != 0);
+
         address signer = vm.addr(privateKey);
 
         bytes memory message = bytes("hello world");

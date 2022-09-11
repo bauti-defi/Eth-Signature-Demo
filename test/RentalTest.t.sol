@@ -66,4 +66,40 @@ contract SigTest is Test {
         proxy.delegateCall(lender, signature, message);
     }
 
+    function testFailsRentIfLenderIsNotSigner(address renter, uint256 lenderPK, address nftAddress, address random) public {
+        vm.assume(nftAddress != address(0));
+        vm.assume(lenderPK > 10000);
+        // vm requirement
+        vm.assume(lenderPK < 115792089237316195423570985008687907852837564279074904382605163141518161494337);
+        vm.assume(renter != address(0));
+        vm.assume(random != address(0));
+
+        address lender = vm.addr(lenderPK);
+
+        vm.assume(renter != lender);
+        vm.assume(random != lender);
+
+        vm.label(lender, "Lender");
+        vm.label(renter, "Renter");
+        vm.label(nftAddress, "MockNFT");
+
+        IRentalController.Listing memory listing = IRentalController.Listing({
+            nonce: 0,
+            tokenId: 1,
+            nftAddress: nftAddress,
+            lenderAddress: random // make random the lender
+        });
+
+        bytes memory message = abi.encode(listing);
+
+        bytes32 messageHash = SignatureChecker.getEthSignedMessageHash(keccak256(message));
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(lenderPK, messageHash);
+
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.prank(renter, renter);
+        proxy.delegateCall(lender, signature, message);
+    }
+
 }

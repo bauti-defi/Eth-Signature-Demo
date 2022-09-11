@@ -64,7 +64,6 @@ contract RentalController is IRentalController{
         return keccak256(abi.encodePacked(nftAddress, tokenId, _lendingId));
     }
 
-
     modifier onlyOwner() {
         require(msg.sender == owner, "RentalController: caller is not the owner");
         _;
