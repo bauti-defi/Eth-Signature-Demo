@@ -3,9 +3,8 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
-import "@src/SigDelegatorProxy.sol";
-import "@src/RentalController.sol";
-import "@src/IRentalController.sol";
+import "@src/ReNFT.sol";
+import "@src/IReNFT.sol";
 import "@src/SignatureChecker.sol";
 // import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
@@ -13,22 +12,15 @@ contract SigTest is Test {
     using SignatureChecker for address;
 
     address deployer;
-    SigDelegatorProxy proxy;
-    RentalController controller;
+    ReNFT reNft;
 
     function setUp() public {
         deployer = vm.addr(1);
         vm.label(deployer, "deployer");
 
-        vm.startPrank(deployer, deployer);
-        proxy = new SigDelegatorProxy();
-        vm.label(address(proxy), "Proxy");
-
-        controller = new RentalController(address(proxy));
-        vm.label(address(controller), "Controller");
-
-        proxy.setTarget(address(controller));
-        vm.stopPrank();
+        vm.prank(deployer, deployer);
+        reNft = new ReNFT();
+        vm.label(address(reNft), "ReNFT");
     }
 
 
@@ -47,7 +39,9 @@ contract SigTest is Test {
         vm.label(renter, "Renter");
         vm.label(nftAddress, "MockNFT");
 
-        IRentalController.Listing memory listing = IRentalController.Listing({
+        IReNFT.Listing memory listing = IReNFT.Listing({
+            startBlockTimestamp: block.timestamp,
+            endBlockTimestamp: block.timestamp + 1_000_000,
             nonce: 0,
             tokenId: 1,
             nftAddress: nftAddress,
@@ -63,7 +57,7 @@ contract SigTest is Test {
         bytes memory signature = abi.encodePacked(r, s, v);
 
         vm.prank(renter, renter);
-        proxy.delegateCall(lender, signature, message);
+        reNft.rent(lender, signature, message);
     }
 
     function testFailsRentIfLenderIsNotSigner(address renter, uint256 lenderPK, address nftAddress, address random) public {
@@ -83,7 +77,9 @@ contract SigTest is Test {
         vm.label(renter, "Renter");
         vm.label(nftAddress, "MockNFT");
 
-        IRentalController.Listing memory listing = IRentalController.Listing({
+        IReNFT.Listing memory listing = IReNFT.Listing({
+            startBlockTimestamp: block.timestamp,
+            endBlockTimestamp: block.timestamp + 1_000_000,
             nonce: 0,
             tokenId: 1,
             nftAddress: nftAddress,
@@ -99,7 +95,7 @@ contract SigTest is Test {
         bytes memory signature = abi.encodePacked(r, s, v);
 
         vm.prank(renter, renter);
-        proxy.delegateCall(lender, signature, message);
+        reNft.rent(lender, signature, message);
     }
 
 }

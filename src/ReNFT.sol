@@ -1,18 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
-import "./IRentalController.sol";
+import "./IReNFT.sol";
+import "./SignatureChecker.sol";
 
-contract RentalController is IRentalController{
+contract ReNFT is IReNFT{
 
     mapping(bytes32 => LendingRenting) public lendingsRentings;
     mapping(bytes32 => uint256) public nftNonce;
-    address immutable owner;
     uint256 public lendingId;
-
-    constructor(address _owner) {
-        owner = _owner;
-    }
-
 
     function postListing(Listing memory listing) private returns(bytes32 lrKey){
         require(listing.lenderAddress != address(0), "RentalController: lender address is zero");
@@ -51,9 +46,16 @@ contract RentalController is IRentalController{
         // perform all transfers (nfts and tokens) here
     }
 
-    function rent(address renter, Listing memory listing) external onlyOwner {
+    function rent(address signer, bytes memory signature, bytes memory call) external {
+        require(SignatureChecker.isValidSignature(signer, SignatureChecker.getEthSignedMessageHash(keccak256(call)), signature), "ReNFT: invalid signature");
+        
+        IReNFT.Listing memory listing = abi.decode(call, (IReNFT.Listing));
+        require(listing.lenderAddress == signer, "ReNFT: Cannot lend on behalf of another");
+        require(listing.startBlockTimestamp <= block.timestamp, "ReNFT: Start time is in the future");
+        require(listing.endBlockTimestamp > listing.startBlockTimestamp, "ReNFT: End time is before start time");
+
         bytes32 lrKey = postListing(listing);
-        _rent(renter, lrKey);
+        _rent(msg.sender, lrKey);
     }
 
     function stopRent() public {
@@ -62,11 +64,6 @@ contract RentalController is IRentalController{
 
     function _lrKey(address nftAddress, uint256 tokenId, uint256 _lendingId) internal pure returns(bytes32) {
         return keccak256(abi.encodePacked(nftAddress, tokenId, _lendingId));
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "RentalController: caller is not the owner");
-        _;
     }
    
 }
